@@ -222,7 +222,9 @@ const brl = v => (v==null?'—':Number(v).toLocaleString('pt-BR',{minimumFractio
 
 let currentRole = 'vendedor';
 let currentTab = 'nova';
-const VENDEDOR_ATUAL = 'ANDERSON'; // dev — em prod vem do JWT
+const VENDEDOR_ATUAL_DEV = 'ANDERSON'; // fallback dev
+let jwtToken = null; // preenchido via postMessage do Clavis (pai do iframe)
+const inIframe = window.self !== window.top;
 
 const els = {
   rolePicker:document.getElementById('rolePicker'),
@@ -247,7 +249,28 @@ const els = {
 };
 
 function apiHeaders(){
-  return { 'X-Vendedor': VENDEDOR_ATUAL, 'X-Role': currentRole };
+  if(jwtToken){
+    return { 'Authorization': 'Bearer ' + jwtToken };
+  }
+  return { 'X-Vendedor': VENDEDOR_ATUAL_DEV, 'X-Role': currentRole };
+}
+
+// SSO handshake com Clavis (padrão troca-oleo): pede token → recebe token
+if(inIframe){
+  window.addEventListener('message', (ev)=>{
+    const d = ev.data || {};
+    if(d.type === 'clavis-sso-token' && d.token){
+      const first = !jwtToken;
+      jwtToken = d.token;
+      if(first && currentTab === 'hist') carregarHistorico();
+    }
+  });
+  try { window.parent.postMessage({type:'clavis-sso-request'}, '*'); } catch(e){}
+  // esconder role picker no iframe (perfil vem do JWT)
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const rp = document.getElementById('rolePicker');
+    if(rp) rp.style.display = 'none';
+  });
 }
 
 function showErr(msg){
