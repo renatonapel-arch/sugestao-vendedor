@@ -26,14 +26,17 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from jose import JWTError, jwt as jose_jwt
 
-import historico_db
-
 DB_BACKEND = os.environ.get("SUGESTAO_DB", "satlbase")
-if DB_BACKEND == "postgres":
-    # espaço reservado — implementado quando promover pra produção
-    import satlbase as db
+if DB_BACKEND == "bridge":
+    import bridge_backend as db
 else:
     import satlbase as db
+
+HIST_BACKEND = os.environ.get("SUGESTAO_HIST", "sqlite")
+if HIST_BACKEND == "postgres":
+    import historico_pg as historico_db
+else:
+    import historico_db
 
 APP_VERSION = "v1"
 
@@ -111,7 +114,8 @@ def require_auth(
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": APP_VERSION, "db_backend": DB_BACKEND}
+    return {"status": "ok", "version": APP_VERSION,
+            "db_backend": DB_BACKEND, "hist_backend": HIST_BACKEND}
 
 
 @app.get("/")
