@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+historico.db
+historico.db-journal
+server.log
+*.log
+.DS_Store

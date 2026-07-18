@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAPEL — Sugestão de Itens</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{
+  --navy-900:#082E49; --navy:#0A3C5F; --sky:#74A9D7; --sky-700:#2f7cbf; --sky-bg:#EAF3FB;
+  --ink:#0c2433; --ink-soft:#33495b; --muted:#62798c; --faint:#93a7b6;
+  --bg:#F4F8FB; --card:#fff; --border:#E8EFF4; --border-strong:#D6E4EE;
+  --ok:#10B981; --ok-bg:#ECFDF5; --ok-fg:#047857;
+  --err:#DC2626; --err-bg:#FEF2F2; --err-fg:#991B1B;
+  --r:14px;
+  --shadow:0 1px 2px rgba(8,46,73,.04),0 10px 26px -14px rgba(8,46,73,.22);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --font:'Inter',system-ui,sans-serif; --font-d:'Archivo',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.5}
+.fd{font-family:var(--font-d);letter-spacing:-.02em}
+.tnum{font-variant-numeric:tabular-nums}
+::selection{background:var(--sky);color:var(--navy-900)}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;box-shadow:var(--shadow)}
+
+.btn{border:0;border-radius:11px;padding:12px 20px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;transition:.2s var(--ease);display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 8px 18px -8px rgba(10,60,95,.55)}.btn-primary:hover{background:var(--navy-900);transform:translateY(-1px)}
+.btn-primary:disabled{background:var(--faint);box-shadow:none;cursor:not-allowed;transform:none}
+.btn-ghost{background:#fff;border:1px solid var(--border-strong);color:var(--navy)}.btn-ghost:hover{border-color:var(--sky);background:var(--sky-bg)}
+
+.inp{width:100%;font-family:inherit;font-size:14px;color:var(--ink);background:#fff;border:1.5px solid var(--border);border-radius:11px;padding:12px 14px;transition:.18s var(--ease)}
+.inp:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 4px var(--sky-bg)}
+.label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
+
+.spin{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+svg.i{width:1em;height:1em;display:inline-block;vertical-align:-.13em;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+
+.role-picker{display:flex;align-items:center;gap:2px;padding:4px 4px 4px 0;background:#fff;border:1px solid var(--border-strong);border-radius:11px;box-shadow:var(--shadow);width:fit-content;margin-left:auto;margin-bottom:18px}
+.role-picker .role-lbl{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;padding:0 12px 0 14px}
+.role-btn{border:0;background:transparent;padding:8px 16px;border-radius:8px;font-family:var(--font-d);font-weight:700;font-size:12.5px;color:var(--muted);cursor:pointer;transition:.18s var(--ease)}
+.role-btn:hover{color:var(--navy)}
+.role-btn.active{background:var(--navy);color:#fff}
+
+.tabs-wrap{max-width:960px;margin:0 auto 22px}
+.tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--border)}
+.tab{padding:14px 22px;font-family:var(--font-d);font-weight:800;font-size:13px;color:var(--muted);cursor:pointer;border:0;background:transparent;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;transition:.18s var(--ease);text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:8px}
+.tab:hover{color:var(--navy)}
+.tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+
+.doc{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.doc-head{background:linear-gradient(120deg,var(--navy-900),var(--navy));color:#fff;padding:18px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.doc-head .lbl{font-size:10px;font-weight:800;letter-spacing:.14em;color:#9fcdf0;text-transform:uppercase}
+.doc-head .val{font-family:var(--font-d);font-weight:800;font-size:15px;margin-top:3px;letter-spacing:-.01em}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+table.tbl th{text-align:center;padding:10px 14px;font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1.5px solid var(--border);background:var(--bg)}
+table.tbl th.left,table.tbl td.left{text-align:left}
+table.tbl td{padding:14px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;text-align:center}
+table.tbl tr:last-child td{border-bottom:0}
+
+.c-num{font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--sky-700);width:34px}
+.c-cod{font-family:var(--font-d);font-size:11px;font-weight:800;color:var(--sky-700);background:var(--sky-bg);padding:3px 9px;border-radius:6px;letter-spacing:.02em;display:inline-block}
+.c-desc{font-family:var(--font-d);font-weight:800;font-size:14.5px;color:var(--navy-900);letter-spacing:-.01em;white-space:normal;line-height:1.25}
+.c-ult{font-family:var(--font-d);font-weight:900;font-size:20px;color:var(--ink-soft);letter-spacing:-.02em}
+.c-promo{font-family:var(--font-d);font-weight:900;font-size:20px;color:var(--ok-fg);letter-spacing:-.02em}
+.c-qmin{color:var(--ink-soft);font-weight:700}
+.c-econ span{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--ok-bg);color:var(--ok-fg)}
+
+.hist-wrap{max-width:960px;margin:0 auto}
+.hist-head{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 14px}
+.hist-title{font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--navy-900);letter-spacing:-.01em}
+.hist-count{font-size:12px;color:var(--muted);font-weight:600}
+.hist-tbl tbody tr{cursor:pointer;transition:background .15s var(--ease)}
+.hist-tbl tbody tr:hover{background:var(--sky-bg)}
+.h-data{font-family:var(--font-d);font-weight:800;color:var(--navy-900);font-size:13px}
+.h-hora{color:var(--ink-soft);font-weight:700;font-size:13px}
+.h-vend{font-family:var(--font-d);font-weight:800;color:var(--ink-soft);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.h-cot{font-family:var(--font-d);font-weight:800;color:var(--sky-700);font-size:13.5px}
+.h-cli{font-family:var(--font-d);font-weight:700;color:var(--navy-900);font-size:14px}
+.h-chev{color:var(--faint);transition:.18s var(--ease);font-size:15px}
+.hist-tbl tbody tr:hover .h-chev{color:var(--sky-700);transform:translateX(2px)}
+
+.err-box{background:var(--err-bg);border:1px solid #FCA5A5;border-radius:11px;padding:14px 18px;color:var(--err-fg);font-weight:600;font-size:13.5px;display:flex;align-items:flex-start;gap:10px}
+.err-box svg{color:var(--err);margin-top:2px;flex-shrink:0}
+.empty{padding:40px 20px;text-align:center;color:var(--muted);font-weight:600}
+
+@media print{
+  body{background:#fff}
+  .no-print{display:none !important}
+  .doc,.card{box-shadow:none;border-color:#d0d8de}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2l1.8 5.4L19 9l-4.5 3.3L16 18l-4-3-4 3 1.5-5.7L5 9l5.2-1.6z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></symbol>
+</defs></svg>
+
+<main class="mx-auto" style="max-width:1440px;padding:20px 18px">
+
+  <div class="role-picker no-print" id="rolePicker">
+    <span class="role-lbl">Perfil (dev)</span>
+    <button class="role-btn active" data-role="vendedor">Vendedor</button>
+    <button class="role-btn" data-role="gestor">Gestor</button>
+  </div>
+
+  <div class="tabs-wrap no-print" id="tabsBar">
+    <div class="tabs">
+      <button class="tab active" data-tab="nova"><svg class="i"><use href="#i-spark"/></svg>Nova consulta</button>
+      <button class="tab" data-tab="hist"><svg class="i"><use href="#i-clock"/></svg>Histórico</button>
+    </div>
+  </div>
+
+  <section id="stepInput" class="no-print max-w-2xl mx-auto">
+    <div class="card">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="label" for="filial">Filial</label>
+          <select class="inp" id="filial">
+            <option value="100">100 — Maringá</option>
+            <option value="200">200 — Ponta Grossa</option>
+            <option value="300">300 — Luís Eduardo Magalhães</option>
+          </select>
+        </div>
+        <div>
+          <label class="label" for="cotacao">Número da cotação</label>
+          <input class="inp tnum" id="cotacao" type="text" inputmode="numeric" placeholder="ex.: 232508" value="232508">
+        </div>
+      </div>
+      <div id="errBox" class="mt-4 hidden"></div>
+      <button class="btn btn-primary mt-5 w-full justify-center" id="btnGerar">
+        <svg class="i"><use href="#i-search"/></svg>
+        Gerar sugestões
+      </button>
+    </div>
+  </section>
+
+  <section id="stepLoading" class="card mt-6 hidden no-print max-w-2xl mx-auto">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full grid place-items-center" style="background:var(--navy)"><div class="spin"></div></div>
+      <div>
+        <div class="font-semibold text-[14px] text-[var(--navy-900)]" id="loadingText">Analisando cotação…</div>
+        <div class="text-[12px] text-[var(--muted)]">isso leva só alguns segundos</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="stepResult" class="hidden reveal">
+    <div class="no-print flex justify-end mb-3 gap-2">
+      <button class="btn btn-ghost hidden" id="btnVoltarHist"><svg class="i"><use href="#i-back"/></svg>Voltar ao histórico</button>
+      <button class="btn btn-ghost" id="btnNova"><svg class="i"><use href="#i-x"/></svg>Nova consulta</button>
+    </div>
+    <div class="doc">
+      <div class="doc-head">
+        <div><div class="lbl">Cliente</div><div class="val" id="hdrCliente">—</div></div>
+        <div><div class="lbl">Cotação</div><div class="val tnum" id="hdrCotacao">—</div></div>
+        <div><div class="lbl">Data</div><div class="val tnum" id="hdrData">—</div></div>
+        <div><div class="lbl">Vendedor</div><div class="val" id="hdrVend">—</div></div>
+      </div>
+      <div style="height:22px;background:#fff"></div>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Código</th>
+            <th class="left">Produto</th>
+            <th>Última compra</th>
+            <th>Preço promocional</th>
+            <th>Economia</th>
+            <th>Qtd. mín.</th>
+          </tr>
+        </thead>
+        <tbody id="itemList" class="tnum"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="stepHistorico" class="hidden no-print">
+    <div class="hist-wrap">
+      <div class="card" style="padding:20px 22px">
+        <div class="hist-head">
+          <div class="hist-title">Consultas geradas</div>
+          <div class="hist-count" id="histCount"></div>
+        </div>
+        <table class="tbl hist-tbl">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Hora</th>
+              <th class="left">Vendedor</th>
+              <th>Cotação</th>
+              <th class="left">Cliente</th>
+              <th style="width:32px"></th>
+            </tr>
+          </thead>
+          <tbody id="histList" class="tnum"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const brl = v => (v==null?'—':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}));
+
+let currentRole = 'vendedor';
+let currentTab = 'nova';
+const VENDEDOR_ATUAL = 'ANDERSON'; // dev — em prod vem do JWT
+
+const els = {
+  rolePicker:document.getElementById('rolePicker'),
+  tabsBar:document.getElementById('tabsBar'),
+  stepInput:document.getElementById('stepInput'),
+  stepLoading:document.getElementById('stepLoading'),
+  stepResult:document.getElementById('stepResult'),
+  stepHistorico:document.getElementById('stepHistorico'),
+  loadingText:document.getElementById('loadingText'),
+  itemList:document.getElementById('itemList'),
+  histList:document.getElementById('histList'),
+  histCount:document.getElementById('histCount'),
+  hdrCliente:document.getElementById('hdrCliente'),
+  hdrCotacao:document.getElementById('hdrCotacao'),
+  hdrData:document.getElementById('hdrData'),
+  hdrVend:document.getElementById('hdrVend'),
+  btnVoltarHist:document.getElementById('btnVoltarHist'),
+  btnGerar:document.getElementById('btnGerar'),
+  errBox:document.getElementById('errBox'),
+  filial:document.getElementById('filial'),
+  cotacao:document.getElementById('cotacao'),
+};
+
+function apiHeaders(){
+  return { 'X-Vendedor': VENDEDOR_ATUAL, 'X-Role': currentRole };
+}
+
+function showErr(msg){
+  els.errBox.innerHTML = `<div class="err-box"><svg class="i" style="font-size:18px"><use href="#i-alert"/></svg><span>${msg}</span></div>`;
+  els.errBox.classList.remove('hidden');
+}
+function clearErr(){ els.errBox.classList.add('hidden'); els.errBox.innerHTML = ''; }
+
+function renderItems(itens){
+  if(!itens || itens.length === 0){
+    els.itemList.innerHTML = `<tr><td colspan="7" class="empty">Nenhum item candidato para esta cotação.<br><span style="font-weight:500;font-size:12px">Ou o cliente ainda não tem histórico, ou nenhum produto atende os filtros (economia ≥ 5%, preço promo &lt; última compra).</span></td></tr>`;
+    return;
+  }
+  const sorted = [...itens].sort((a,b)=>b.pct-a.pct);
+  els.itemList.innerHTML = sorted.map((r,i)=>`
+    <tr>
+      <td class="c-num">${(i+1).toString().padStart(2,'0')}</td>
+      <td><span class="c-cod">${r.cod}</span></td>
+      <td class="left"><span class="c-desc">${r.desc}</span></td>
+      <td><span class="c-ult">${brl(r.ult)}</span></td>
+      <td><span class="c-promo">${brl(r.promo)}</span></td>
+      <td class="c-econ"><span><svg class="i"><use href="#i-down"/></svg>${Math.round(r.pct)}%</span></td>
+      <td class="c-qmin">${r.qmin}</td>
+    </tr>
+  `).join('');
+}
+
+function fillDoc(d){
+  els.hdrCliente.textContent = d.cliente || '—';
+  els.hdrCotacao.textContent = `${d.filial} · ${d.num_docto}`;
+  els.hdrData.textContent = d.data_ctv || '—';
+  els.hdrVend.textContent = d.vendedor_ctv || d.vendedor_atual || '—';
+  renderItems(d.itens || []);
+}
+
+async function fazerConsulta(){
+  clearErr();
+  const filial = els.filial.value;
+  const cotacao = (els.cotacao.value || '').trim();
+  if(!cotacao){ showErr('Informe o número da cotação.'); return; }
+
+  els.stepInput.classList.add('hidden');
+  els.stepLoading.classList.remove('hidden');
+  const steps = ["Analisando cotação…","Buscando histórico do cliente…","Calculando ofertas…"];
+  let i=0;
+  const iv = setInterval(()=>{ i++; if(i<steps.length) els.loadingText.textContent = steps[i]; }, 500);
+
+  try {
+    const body = new FormData();
+    body.append('filial', filial);
+    body.append('num_docto', cotacao);
+    const resp = await fetch('/sugerir', { method:'POST', headers: apiHeaders(), body });
+    clearInterval(iv);
+    els.stepLoading.classList.add('hidden');
+
+    if(!resp.ok){
+      const err = await resp.json().catch(()=>({erro:'erro inesperado'}));
+      showErr(err.erro || 'erro inesperado');
+      els.stepInput.classList.remove('hidden');
+      return;
+    }
+    const data = await resp.json();
+    fillDoc(data);
+    els.btnVoltarHist.classList.add('hidden');
+    els.stepResult.classList.remove('hidden');
+    requestAnimationFrame(()=>els.stepResult.classList.add('in'));
+  } catch(e){
+    clearInterval(iv);
+    els.stepLoading.classList.add('hidden');
+    showErr(`falha de rede: ${e.message}`);
+    els.stepInput.classList.remove('hidden');
+  }
+}
+
+async function carregarHistorico(){
+  els.histList.innerHTML = `<tr><td colspan="6" class="empty">Carregando…</td></tr>`;
+  els.histCount.textContent = '';
+  try {
+    const resp = await fetch('/historico', { headers: apiHeaders() });
+    const data = await resp.json();
+    const rows = data.registros || [];
+    els.histCount.textContent = `${rows.length} ${rows.length===1?'registro':'registros'} · ${data.role==='gestor'?'todos os vendedores':'suas consultas'}`;
+    if(rows.length===0){
+      els.histList.innerHTML = `<tr><td colspan="6" class="empty">Nenhuma consulta registrada ainda.</td></tr>`;
+      return;
+    }
+    els.histList.innerHTML = rows.map(h=>`
+      <tr data-id="${h.id}">
+        <td><span class="h-data">${h.data}</span></td>
+        <td><span class="h-hora">${h.hora}</span></td>
+        <td class="left"><span class="h-vend">${h.vendedor}</span></td>
+        <td><span class="h-cot">${h.filial} · ${h.cotacao}</span></td>
+        <td class="left"><span class="h-cli">${h.cliente}</span></td>
+        <td><svg class="i h-chev"><use href="#i-chev"/></svg></td>
+      </tr>
+    `).join('');
+    els.histList.querySelectorAll('tr[data-id]').forEach(tr=>{
+      tr.addEventListener('click',()=>abrirDetalhe(+tr.dataset.id));
+    });
+  } catch(e){
+    els.histList.innerHTML = `<tr><td colspan="6" class="empty">Erro ao carregar histórico: ${e.message}</td></tr>`;
+  }
+}
+
+async function abrirDetalhe(id){
+  try {
+    const resp = await fetch(`/historico/${id}`, { headers: apiHeaders() });
+    if(!resp.ok) throw new Error('não foi possível abrir');
+    const data = await resp.json();
+    fillDoc(data);
+    els.stepHistorico.classList.add('hidden');
+    els.btnVoltarHist.classList.remove('hidden');
+    els.stepResult.classList.remove('hidden');
+    requestAnimationFrame(()=>els.stepResult.classList.add('in'));
+    window.scrollTo({top:0,behavior:'smooth'});
+  } catch(e){
+    alert(`falha: ${e.message}`);
+  }
+}
+
+function setRole(r){
+  currentRole = r;
+  els.rolePicker.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active', b.dataset.role===r));
+  setTab(currentTab);
+}
+
+function setTab(t){
+  currentTab = t;
+  els.tabsBar.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
+  els.stepResult.classList.add('hidden');
+  els.stepResult.classList.remove('in');
+  els.btnVoltarHist.classList.add('hidden');
+  els.stepLoading.classList.add('hidden');
+  if(t==='nova'){
+    els.stepHistorico.classList.add('hidden');
+    els.stepInput.classList.remove('hidden');
+    clearErr();
+  } else {
+    els.stepInput.classList.add('hidden');
+    els.stepHistorico.classList.remove('hidden');
+    carregarHistorico();
+  }
+}
+
+els.rolePicker.querySelectorAll('.role-btn').forEach(b=>{
+  b.addEventListener('click',()=>setRole(b.dataset.role));
+});
+els.tabsBar.querySelectorAll('.tab').forEach(b=>{
+  b.addEventListener('click',()=>setTab(b.dataset.tab));
+});
+els.btnGerar.addEventListener('click', fazerConsulta);
+els.cotacao.addEventListener('keydown', e=>{ if(e.key==='Enter') fazerConsulta(); });
+
+document.getElementById('btnNova').addEventListener('click', ()=>{ setTab('nova'); window.scrollTo({top:0,behavior:'smooth'}); });
+els.btnVoltarHist.addEventListener('click', ()=>{ setTab('hist'); window.scrollTo({top:0,behavior:'smooth'}); });
+</script>
+</body>
+</html>
