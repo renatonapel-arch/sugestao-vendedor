@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements-prod.txt .
 RUN pip install --no-cache-dir -r requirements-prod.txt
 
-COPY app.py historico_db.py historico_pg.py bridge_backend.py ./
+COPY app.py historico_db.py historico_pg.py bridge_backend.py apuracao.py ./
 COPY static ./static
 
 ENV SUGESTAO_DB=bridge
