@@ -19,12 +19,18 @@ from __future__ import annotations
 
 import os
 import secrets
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
+import httpx
+from fastapi import BackgroundTasks, Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from jose import JWTError, jwt as jose_jwt
+
+_TZ_BR = ZoneInfo("America/Sao_Paulo")
+_WHATSAPP_INSTANCE = os.environ.get("EVOLUTION_INSTANCE", "notif-9702")  # gateway v3 — rota sistema/Renato
 
 DB_BACKEND = os.environ.get("SUGESTAO_DB", "satlbase")
 if DB_BACKEND == "bridge":
@@ -112,6 +118,32 @@ def require_auth(
     return {"vendedor": vendedor, "role": role}
 
 
+def _notificar_consulta(vendedor: str, cliente: str, filial: str, num_docto: int, qtd_itens: int) -> None:
+    """Avisa o Renato via WhatsApp (Gateway v3) a cada consulta gerada.
+    Best-effort — nunca deve derrubar a resposta ao vendedor (BackgroundTasks
+    já roda fora do ciclo de resposta, mas o try/except cobre erro de rede)."""
+    token = os.environ.get("EVOLUTION_API_TOKEN")
+    numero = os.environ.get("RENATO_WHATSAPP")
+    if not token or not numero:
+        return
+    hora = datetime.now(_TZ_BR).strftime("%d/%m %H:%M")
+    texto = (
+        f"Sugestão de Itens — {vendedor}\n"
+        f"{hora} · cotação {filial}·{num_docto} · {cliente}\n"
+        f"{qtd_itens} itens sugeridos"
+    )
+    url = f"http://195.35.19.31:18310/message/sendText/{_WHATSAPP_INSTANCE}"
+    try:
+        httpx.post(
+            url,
+            headers={"apikey": token},
+            json={"number": numero, "text": texto, "name": "Renato"},
+            timeout=8.0,
+        )
+    except httpx.HTTPError:
+        pass
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "version": APP_VERSION,
@@ -125,6 +157,7 @@ def index():
 
 @app.post("/sugerir")
 def sugerir(
+    background_tasks: BackgroundTasks,
     filial: str = Form(...),
     num_docto: int = Form(...),
     markup: float = Form(1.30),
@@ -158,6 +191,16 @@ def sugerir(
     )
     resultado["consulta_id"] = consulta_id
     resultado["vendedor_atual"] = user["vendedor"]
+
+    background_tasks.add_task(
+        _notificar_consulta,
+        vendedor=user["vendedor"],
+        cliente=resultado["cliente"],
+        filial=resultado["filial"],
+        num_docto=resultado["num_docto"],
+        qtd_itens=len(resultado.get("itens") or []),
+    )
+
     return JSONResponse(resultado)
 
 
