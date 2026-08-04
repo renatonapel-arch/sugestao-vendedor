@@ -75,6 +75,24 @@ table.tbl tr:last-child td{border-bottom:0}
 .c-econ span{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--ok-bg);color:var(--ok-fg)}
 
 .hist-wrap{max-width:1440px;margin:0 auto}
+
+/* faixa de resumo de conversao */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--border);
+      border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow)}
+.kpi{background:#fff;padding:16px 18px}
+.kpi .k-lbl{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.kpi .k-val{font-family:var(--font-d);font-weight:900;font-size:26px;color:var(--navy-900);letter-spacing:-.03em;margin-top:4px;line-height:1}
+.kpi .k-sub{font-size:11px;color:var(--faint);font-weight:600;margin-top:3px}
+.kpi.ok .k-val{color:var(--ok-fg)}
+
+/* conversao por linha */
+.c-conv{font-family:var(--font-d);font-weight:800;font-size:13px;color:var(--faint)}
+.c-conv.hit{display:inline-flex;align-items:center;gap:5px;background:var(--ok-bg);color:var(--ok-fg);
+            padding:4px 10px;border-radius:999px;font-size:12px}
+.row-conv{background:linear-gradient(90deg,rgba(16,185,129,.07),transparent 55%)}
+.badge-conv{display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-size:10px;font-weight:800;
+            padding:3px 8px;border-radius:999px;background:var(--ok-bg);color:var(--ok-fg);
+            text-transform:uppercase;letter-spacing:.06em;vertical-align:middle}
 .hist-head{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 14px}
 .hist-title{font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--navy-900);letter-spacing:-.01em}
 .hist-count{font-size:12px;color:var(--muted);font-weight:600}
@@ -110,6 +128,7 @@ table.tbl tr:last-child td{border-bottom:0}
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2l1.8 5.4L19 9l-4.5 3.3L16 18l-4-3-4 3 1.5-5.7L5 9l5.2-1.6z"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></symbol>
 </defs></svg>
 
@@ -194,6 +213,7 @@ table.tbl tr:last-child td{border-bottom:0}
 
   <section id="stepHistorico" class="hidden no-print">
     <div class="hist-wrap">
+      <div class="kpis" id="kpis"></div>
       <div class="card" style="padding:20px 22px">
         <div class="hist-head">
           <div class="hist-title">Consultas geradas</div>
@@ -207,6 +227,7 @@ table.tbl tr:last-child td{border-bottom:0}
               <th class="left">Vendedor</th>
               <th>Cotação</th>
               <th class="left">Cliente</th>
+              <th>Conversão</th>
               <th style="width:32px"></th>
             </tr>
           </thead>
@@ -280,23 +301,28 @@ function showErr(msg){
 }
 function clearErr(){ els.errBox.classList.add('hidden'); els.errBox.innerHTML = ''; }
 
-function renderItems(itens){
+function renderItems(itens, convertidos){
   if(!itens || itens.length === 0){
     els.itemList.innerHTML = `<tr><td colspan="7" class="empty">Nenhum item candidato para esta cotação.<br><span style="font-weight:500;font-size:12px">Ou o cliente ainda não tem histórico, ou nenhum produto atende os filtros (economia ≥ 5%, preço promo &lt; última compra).</span></td></tr>`;
     return;
   }
+  const conv = new Set(convertidos || []);
   const sorted = [...itens].sort((a,b)=>b.pct-a.pct);
-  els.itemList.innerHTML = sorted.map((r,i)=>`
-    <tr>
+  els.itemList.innerHTML = sorted.map((r,i)=>{
+    const vendido = conv.has(r.cod);
+    const selo = vendido
+      ? `<span class="badge-conv"><svg class="i"><use href="#i-check"/></svg>vendido</span>` : '';
+    return `
+    <tr class="${vendido?'row-conv':''}">
       <td class="c-num">${(i+1).toString().padStart(2,'0')}</td>
       <td><span class="c-cod">${r.cod}</span></td>
-      <td class="left"><span class="c-desc">${r.desc}</span></td>
+      <td class="left"><span class="c-desc">${r.desc}</span>${selo}</td>
       <td><span class="c-ult">${brl(r.ult)}</span></td>
       <td><span class="c-promo">${brl(r.promo)}</span></td>
       <td class="c-econ"><span><svg class="i"><use href="#i-down"/></svg>${Math.round(r.pct)}%</span></td>
       <td class="c-qmin">${r.qmin}</td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 function fillDoc(d){
@@ -304,7 +330,7 @@ function fillDoc(d){
   els.hdrCotacao.textContent = `${d.filial} · ${d.num_docto}`;
   els.hdrData.textContent = d.data_ctv || '—';
   els.hdrVend.textContent = d.vendedor_ctv || d.vendedor_atual || '—';
-  renderItems(d.itens || []);
+  renderItems(d.itens || [], d.convertidos);
 }
 
 async function fazerConsulta(){
@@ -346,6 +372,22 @@ async function fazerConsulta(){
   }
 }
 
+function renderKpis(r, role){
+  const box = document.getElementById('kpis');
+  if(!r){ box.innerHTML = ''; return; }
+  const taxa = r.itens_sugeridos ? (100*r.itens_convertidos/r.itens_sugeridos) : 0;
+  const escopo = role === 'gestor' ? 'todos os vendedores' : 'suas consultas';
+  box.innerHTML = `
+    <div class="kpi"><div class="k-lbl">Consultas</div><div class="k-val">${r.consultas}</div>
+      <div class="k-sub">${escopo}</div></div>
+    <div class="kpi"><div class="k-lbl">Itens sugeridos</div><div class="k-val">${r.itens_sugeridos}</div>
+      <div class="k-sub">${r.apuradas} consultas apuradas</div></div>
+    <div class="kpi ok"><div class="k-lbl">Itens vendidos</div><div class="k-val">${r.itens_convertidos}</div>
+      <div class="k-sub">${taxa.toFixed(1)}% dos sugeridos</div></div>
+    <div class="kpi ok"><div class="k-lbl">Receita gerada</div><div class="k-val">${brl(r.valor_gerado)}</div>
+      <div class="k-sub">${r.consultas_convertidas} consultas com venda</div></div>`;
+}
+
 async function carregarHistorico(){
   els.histList.innerHTML = `<tr><td colspan="6" class="empty">Carregando…</td></tr>`;
   els.histCount.textContent = '';
@@ -358,16 +400,24 @@ async function carregarHistorico(){
       els.histList.innerHTML = `<tr><td colspan="6" class="empty">Nenhuma consulta registrada ainda.</td></tr>`;
       return;
     }
-    els.histList.innerHTML = rows.map(h=>`
-      <tr data-id="${h.id}">
+    renderKpis(data.resumo, data.role);
+    els.histList.innerHTML = rows.map(h=>{
+      const n = h.convertidos || 0;
+      const tot = h.itens_sugeridos || 0;
+      const conv = n > 0
+        ? `<span class="c-conv hit"><svg class="i"><use href="#i-check"/></svg>${n}/${tot}</span>`
+        : `<span class="c-conv">${h.apurado ? '0/' + tot : '—'}</span>`;
+      return `
+      <tr data-id="${h.id}" class="${n>0?'row-conv':''}">
         <td><span class="h-data">${h.data}</span></td>
         <td><span class="h-hora">${h.hora}</span></td>
         <td class="left"><span class="h-vend">${h.vendedor}</span></td>
         <td><span class="h-cot">${h.filial} · ${h.cotacao}</span></td>
         <td class="left"><span class="h-cli">${h.cliente}</span></td>
+        <td>${conv}</td>
         <td><svg class="i h-chev"><use href="#i-chev"/></svg></td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
     els.histList.querySelectorAll('tr[data-id]').forEach(tr=>{
       tr.addEventListener('click',()=>abrirDetalhe(+tr.dataset.id));
     });

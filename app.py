@@ -206,12 +206,37 @@ def sugerir(
 
 @app.get("/historico")
 def historico(user: dict = Depends(require_auth)):
-    linhas = historico_db.listar(user["vendedor"], user["role"] == "gestor")
-    return JSONResponse({
+    is_gestor = user["role"] == "gestor"
+    linhas = historico_db.listar(user["vendedor"], is_gestor)
+    resp = {
         "role": user["role"],
         "vendedor_atual": user["vendedor"],
         "registros": linhas,
-    })
+    }
+    if hasattr(historico_db, "resumo_conversao"):
+        try:
+            resp["resumo"] = historico_db.resumo_conversao(user["vendedor"], is_gestor)
+        except Exception:
+            pass
+    return JSONResponse(resp)
+
+
+@app.post("/admin/apurar-conversao")
+def admin_apurar_conversao(request: Request, limite: int | None = None):
+    """Apuração diária de conversão. Protegido por ADMIN_SYNC_TOKEN (Bearer).
+    Chamado pelo cron da VPS 1x/dia."""
+    token = os.environ.get("ADMIN_SYNC_TOKEN")
+    auth = request.headers.get("authorization", "")
+    if not token or auth != f"Bearer {token}":
+        raise HTTPException(status_code=401, detail="token inválido")
+    if not hasattr(historico_db, "pendentes_apuracao"):
+        return JSONResponse({"erro": "apuração exige SUGESTAO_HIST=postgres"}, status_code=400)
+
+    import apuracao
+    try:
+        return JSONResponse(apuracao.apurar(historico_db, limite=limite))
+    except Exception as exc:
+        return JSONResponse({"erro": f"falha na apuração: {exc}"}, status_code=500)
 
 
 @app.get("/historico/{consulta_id}")
