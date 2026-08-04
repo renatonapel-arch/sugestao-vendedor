@@ -216,6 +216,8 @@ def historico(user: dict = Depends(require_auth)):
     if hasattr(historico_db, "resumo_conversao"):
         try:
             resp["resumo"] = historico_db.resumo_conversao(user["vendedor"], is_gestor)
+            if is_gestor:
+                resp["ranking"] = historico_db.ranking_vendedores()
         except Exception:
             pass
     return JSONResponse(resp)

@@ -93,6 +93,29 @@ table.tbl tr:last-child td{border-bottom:0}
 .badge-conv{display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-size:10px;font-weight:800;
             padding:3px 8px;border-radius:999px;background:var(--ok-bg);color:var(--ok-fg);
             text-transform:uppercase;letter-spacing:.06em;vertical-align:middle}
+
+/* filtro da tabela */
+.seg{display:inline-flex;gap:2px;padding:3px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-family:var(--font-d);
+            font-weight:700;font-size:12px;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}
+.seg button:hover{color:var(--navy)}
+.seg button.on{background:var(--navy);color:#fff}
+
+/* ranking por vendedor */
+.rank{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);
+      padding:18px 20px;margin-bottom:18px}
+.rank h3{font-family:var(--font-d);font-weight:800;font-size:14px;color:var(--navy-900);margin-bottom:12px}
+.rank table{width:100%;border-collapse:collapse;font-size:13px}
+.rank th{text-align:right;padding:7px 10px;font-size:10px;font-weight:800;color:var(--muted);
+         text-transform:uppercase;letter-spacing:.08em;border-bottom:1.5px solid var(--border)}
+.rank th:first-child{text-align:left}
+.rank td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums}
+.rank td:first-child{text-align:left;font-family:var(--font-d);font-weight:700;color:var(--navy-900);font-size:12.5px}
+.rank tr:last-child td{border-bottom:0}
+.rank .r-rec{font-family:var(--font-d);font-weight:900;color:var(--ok-fg);font-size:14px}
+.rank .r-zero{color:var(--faint)}
+.rank tr.top td:first-child::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;
+      background:var(--ok);margin-right:8px;vertical-align:middle}
 .hist-head{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 14px}
 .hist-title{font-family:var(--font-d);font-weight:800;font-size:15px;color:var(--navy-900);letter-spacing:-.01em}
 .hist-count{font-size:12px;color:var(--muted);font-weight:600}
@@ -214,10 +237,17 @@ table.tbl tr:last-child td{border-bottom:0}
   <section id="stepHistorico" class="hidden no-print">
     <div class="hist-wrap">
       <div class="kpis" id="kpis"></div>
+      <div class="rank hidden" id="rankBox"></div>
       <div class="card" style="padding:20px 22px">
         <div class="hist-head">
-          <div class="hist-title">Consultas geradas</div>
-          <div class="hist-count" id="histCount"></div>
+          <div>
+            <div class="hist-title">Consultas geradas</div>
+            <div class="hist-count" id="histCount" style="margin-top:3px"></div>
+          </div>
+          <div class="seg" id="filtroSeg">
+            <button data-f="conv" class="on">Com venda</button>
+            <button data-f="all">Todas</button>
+          </div>
         </div>
         <table class="tbl hist-tbl">
           <thead>
@@ -375,33 +405,62 @@ async function fazerConsulta(){
 function renderKpis(r, role){
   const box = document.getElementById('kpis');
   if(!r){ box.innerHTML = ''; return; }
-  const taxa = r.itens_sugeridos ? (100*r.itens_convertidos/r.itens_sugeridos) : 0;
+  const taxaItem = r.itens_sugeridos ? (100*r.itens_convertidos/r.itens_sugeridos) : 0;
+  const taxaCons = r.consultas ? (100*r.consultas_convertidas/r.consultas) : 0;
+  const ticket = r.itens_convertidos ? (r.valor_gerado/r.itens_convertidos) : 0;
   const escopo = role === 'gestor' ? 'todos os vendedores' : 'suas consultas';
   box.innerHTML = `
-    <div class="kpi"><div class="k-lbl">Consultas</div><div class="k-val">${r.consultas}</div>
-      <div class="k-sub">${escopo}</div></div>
-    <div class="kpi"><div class="k-lbl">Itens sugeridos</div><div class="k-val">${r.itens_sugeridos}</div>
-      <div class="k-sub">${r.apuradas} consultas apuradas</div></div>
-    <div class="kpi ok"><div class="k-lbl">Itens vendidos</div><div class="k-val">${r.itens_convertidos}</div>
-      <div class="k-sub">${taxa.toFixed(1)}% dos sugeridos</div></div>
     <div class="kpi ok"><div class="k-lbl">Receita gerada</div><div class="k-val">${brl(r.valor_gerado)}</div>
-      <div class="k-sub">${r.consultas_convertidas} consultas com venda</div></div>`;
+      <div class="k-sub">${brl(ticket)} por item vendido</div></div>
+    <div class="kpi ok"><div class="k-lbl">Itens vendidos</div><div class="k-val">${r.itens_convertidos}</div>
+      <div class="k-sub">${taxaItem.toFixed(1)}% dos ${r.itens_sugeridos} sugeridos</div></div>
+    <div class="kpi ok"><div class="k-lbl">Consultas c/ venda</div><div class="k-val">${r.consultas_convertidas}</div>
+      <div class="k-sub">${taxaCons.toFixed(0)}% de aproveitamento</div></div>
+    <div class="kpi"><div class="k-lbl">Consultas geradas</div><div class="k-val">${r.consultas}</div>
+      <div class="k-sub">${escopo} · ${r.apuradas} apuradas</div></div>`;
 }
 
-async function carregarHistorico(){
-  els.histList.innerHTML = `<tr><td colspan="6" class="empty">Carregando…</td></tr>`;
-  els.histCount.textContent = '';
-  try {
-    const resp = await fetch('/historico', { headers: apiHeaders() });
-    const data = await resp.json();
-    const rows = data.registros || [];
-    els.histCount.textContent = `${rows.length} ${rows.length===1?'registro':'registros'} · ${data.role==='gestor'?'todos os vendedores':'suas consultas'}`;
-    if(rows.length===0){
-      els.histList.innerHTML = `<tr><td colspan="6" class="empty">Nenhuma consulta registrada ainda.</td></tr>`;
-      return;
-    }
-    renderKpis(data.resumo, data.role);
-    els.histList.innerHTML = rows.map(h=>{
+function renderRanking(lista){
+  const box = document.getElementById('rankBox');
+  if(!lista || !lista.length){ box.classList.add('hidden'); return; }
+  const linhas = lista.map(v=>{
+    const taxa = v.sugeridos ? (100*v.vendidos/v.sugeridos) : 0;
+    const nome = (v.vendedor||'').split('@')[0];
+    const zero = v.vendidos === 0;
+    return `<tr class="${!zero?'top':''}">
+      <td>${nome}</td>
+      <td>${v.consultas}</td>
+      <td>${v.vendidos}</td>
+      <td class="${zero?'r-zero':''}">${taxa.toFixed(1)}%</td>
+      <td class="${zero?'r-zero':'r-rec'}">${zero?'—':brl(v.receita)}</td>
+    </tr>`;
+  }).join('');
+  box.innerHTML = `<h3>Conversão por vendedor</h3>
+    <table><thead><tr>
+      <th>Vendedor</th><th>Consultas</th><th>Vendidos</th><th>Taxa</th><th>Receita</th>
+    </tr></thead><tbody>${linhas}</tbody></table>`;
+  box.classList.remove('hidden');
+}
+
+let _histRows = [];
+let _histRole = 'vendedor';
+let filtroHist = 'conv';   // padrao: so as que converteram
+
+function pintarHistorico(){
+  const rows = filtroHist === 'conv'
+    ? _histRows.filter(h => (h.convertidos||0) > 0)
+    : _histRows;
+  const escopo = _histRole === 'gestor' ? 'todos os vendedores' : 'suas consultas';
+  const rotulo = filtroHist === 'conv' ? 'com venda' : 'no total';
+  els.histCount.textContent = `${rows.length} ${rows.length===1?'consulta':'consultas'} ${rotulo} · ${escopo}`;
+  if(rows.length === 0){
+    const msg = filtroHist === 'conv'
+      ? `Nenhuma consulta converteu ainda.<br><span style="font-weight:500;font-size:12px">Clique em "Todas" para ver o histórico completo.</span>`
+      : 'Nenhuma consulta registrada ainda.';
+    els.histList.innerHTML = `<tr><td colspan="7" class="empty">${msg}</td></tr>`;
+    return;
+  }
+  els.histList.innerHTML = rows.map(h=>{
       const n = h.convertidos || 0;
       const tot = h.itens_sugeridos || 0;
       const conv = n > 0
@@ -418,11 +477,24 @@ async function carregarHistorico(){
         <td><svg class="i h-chev"><use href="#i-chev"/></svg></td>
       </tr>`;
     }).join('');
-    els.histList.querySelectorAll('tr[data-id]').forEach(tr=>{
-      tr.addEventListener('click',()=>abrirDetalhe(+tr.dataset.id));
-    });
+  els.histList.querySelectorAll('tr[data-id]').forEach(tr=>{
+    tr.addEventListener('click',()=>abrirDetalhe(+tr.dataset.id));
+  });
+}
+
+async function carregarHistorico(){
+  els.histList.innerHTML = `<tr><td colspan="7" class="empty">Carregando…</td></tr>`;
+  els.histCount.textContent = '';
+  try {
+    const resp = await fetch('/historico', { headers: apiHeaders() });
+    const data = await resp.json();
+    _histRows = data.registros || [];
+    _histRole = data.role || 'vendedor';
+    renderKpis(data.resumo, _histRole);
+    renderRanking(data.ranking);
+    pintarHistorico();
   } catch(e){
-    els.histList.innerHTML = `<tr><td colspan="6" class="empty">Erro ao carregar histórico: ${e.message}</td></tr>`;
+    els.histList.innerHTML = `<tr><td colspan="7" class="empty">Erro ao carregar histórico: ${e.message}</td></tr>`;
   }
 }
 
@@ -471,6 +543,14 @@ els.rolePicker.querySelectorAll('.role-btn').forEach(b=>{
 });
 els.tabsBar.querySelectorAll('.tab').forEach(b=>{
   b.addEventListener('click',()=>setTab(b.dataset.tab));
+});
+document.getElementById('filtroSeg').querySelectorAll('button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    filtroHist = b.dataset.f;
+    document.getElementById('filtroSeg').querySelectorAll('button')
+      .forEach(x=>x.classList.toggle('on', x.dataset.f===filtroHist));
+    pintarHistorico();
+  });
 });
 els.btnGerar.addEventListener('click', fazerConsulta);
 els.cotacao.addEventListener('keydown', e=>{ if(e.key==='Enter') fazerConsulta(); });

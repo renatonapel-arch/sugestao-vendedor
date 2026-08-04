@@ -260,6 +260,35 @@ def resumo_conversao(vendedor: str | None, is_gestor: bool) -> dict[str, Any]:
     }
 
 
+def ranking_vendedores(limite: int = 20) -> list[dict[str, Any]]:
+    """Quem converte mais — base pra cobrança do time. Só faz sentido pro gestor."""
+    init()
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT h.vendedor,
+                   COUNT(DISTINCT h.id) AS consultas,
+                   COALESCE(SUM(jsonb_array_length(h.snapshot_json->'itens')), 0) AS sugeridos,
+                   COUNT(c.cod_produto) AS vendidos,
+                   COALESCE(SUM(c.valor_praticado * c.qtde) FILTER (WHERE c.virou_pedido), 0) AS receita
+            FROM sugestao_vendedor.historico_consultas h
+            LEFT JOIN sugestao_vendedor.conversao_item c ON c.consulta_id = h.id
+            GROUP BY h.vendedor
+            ORDER BY receita DESC, vendidos DESC, consultas DESC
+            LIMIT %s
+            """,
+            (limite,),
+        )
+        rows = cur.fetchall()
+    return [{
+        "vendedor": r[0],
+        "consultas": int(r[1] or 0),
+        "sugeridos": int(r[2] or 0),
+        "vendidos": int(r[3] or 0),
+        "receita": float(r[4] or 0),
+    } for r in rows]
+
+
 def obter(consulta_id: int, vendedor: str | None, is_gestor: bool) -> dict[str, Any] | None:
     init()
     with _connect() as conn, conn.cursor() as cur:
