@@ -405,19 +405,23 @@ async function fazerConsulta(){
 function renderKpis(r, role){
   const box = document.getElementById('kpis');
   if(!r){ box.innerHTML = ''; return; }
-  const taxaItem = r.itens_sugeridos ? (100*r.itens_convertidos/r.itens_sugeridos) : 0;
+  const novos = r.itens_novos ?? 0;
+  const desc = r.itens_desconto ?? 0;
+  const vNovo = r.valor_novo ?? 0;
   const taxaCons = r.consultas ? (100*r.consultas_convertidas/r.consultas) : 0;
-  const ticket = r.itens_convertidos ? (r.valor_gerado/r.itens_convertidos) : 0;
   const escopo = role === 'gestor' ? 'todos os vendedores' : 'suas consultas';
+  const alerta = desc > 0
+    ? `<div class="k-sub" style="color:var(--err-fg)">${desc} ${desc===1?'item':'itens'} · ${brl(r.valor_gerado - vNovo)} de desconto no que já sairia</div>`
+    : `<div class="k-sub">nenhum desconto desnecessário</div>`;
   box.innerHTML = `
-    <div class="kpi ok"><div class="k-lbl">Receita gerada</div><div class="k-val">${brl(r.valor_gerado)}</div>
-      <div class="k-sub">${brl(ticket)} por item vendido</div></div>
-    <div class="kpi ok"><div class="k-lbl">Itens vendidos</div><div class="k-val">${r.itens_convertidos}</div>
-      <div class="k-sub">${taxaItem.toFixed(1)}% dos ${r.itens_sugeridos} sugeridos</div></div>
-    <div class="kpi ok"><div class="k-lbl">Consultas c/ venda</div><div class="k-val">${r.consultas_convertidas}</div>
-      <div class="k-sub">${taxaCons.toFixed(0)}% de aproveitamento</div></div>
+    <div class="kpi ok"><div class="k-lbl">Receita nova</div><div class="k-val">${brl(vNovo)}</div>
+      <div class="k-sub">só o que o cliente não levaria</div></div>
+    <div class="kpi ok"><div class="k-lbl">Itens vendidos a mais</div><div class="k-val">${novos}</div>
+      <div class="k-sub">de ${r.itens_sugeridos} sugeridos</div></div>
+    <div class="kpi"><div class="k-lbl">Margem cedida à toa</div><div class="k-val">${desc}</div>
+      ${alerta}</div>
     <div class="kpi"><div class="k-lbl">Consultas geradas</div><div class="k-val">${r.consultas}</div>
-      <div class="k-sub">${escopo} · ${r.apuradas} apuradas</div></div>`;
+      <div class="k-sub">${escopo} · ${taxaCons.toFixed(0)}% com venda</div></div>`;
 }
 
 function renderRanking(lista){

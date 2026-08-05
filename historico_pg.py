@@ -77,6 +77,11 @@ def init() -> None:
                 detectado_em TIMESTAMPTZ NOT NULL DEFAULT now(),
                 PRIMARY KEY (consulta_id, cod_produto)
             );
+            -- true  = venda nova (item estava fora do ciclo de recompra)
+            -- false = cliente ja ia comprar; foi so desconto (canibalizacao)
+            -- null  = sugerido pela regra antiga, sem dado de ciclo pra julgar
+            ALTER TABLE sugestao_vendedor.conversao_item
+                ADD COLUMN IF NOT EXISTS incremental BOOLEAN;
             CREATE INDEX IF NOT EXISTS ix_conv_consulta
                 ON sugestao_vendedor.conversao_item (consulta_id);
         """)
@@ -178,12 +183,12 @@ def gravar_conversoes(consulta_id: int, convertidos: list[dict[str, Any]], fecha
                 """
                 INSERT INTO sugestao_vendedor.conversao_item
                     (consulta_id, cod_produto, promo_sugerido, valor_praticado, qtde,
-                     docto, num_docto, data_doc, na_ctv_orig, virou_pedido)
+                     docto, num_docto, data_doc, na_ctv_orig, virou_pedido, incremental)
                 VALUES %s
                 """,
                 [(consulta_id, c["cod"], c["promo"], c["valor"], c.get("qtde"),
                   c["docto"], c.get("num_docto"), c.get("data_doc"),
-                  c.get("na_ctv_orig"), c.get("virou_pedido", False))
+                  c.get("na_ctv_orig"), c.get("virou_pedido", False), c.get("incremental"))
                  for c in convertidos],
             )
         cur.execute(
@@ -241,14 +246,18 @@ def resumo_conversao(vendedor: str | None, is_gestor: bool) -> dict[str, Any]:
             f"""
             SELECT COUNT(*) AS itens_conv,
                    COUNT(DISTINCT c.consulta_id) AS consultas_conv,
-                   COALESCE(SUM(c.valor_praticado * c.qtde) FILTER (WHERE c.virou_pedido), 0) AS valor
+                   COALESCE(SUM(c.valor_praticado * c.qtde) FILTER (WHERE c.virou_pedido), 0) AS valor,
+                   COUNT(*) FILTER (WHERE c.incremental IS TRUE) AS itens_novos,
+                   COALESCE(SUM(c.valor_praticado * c.qtde)
+                            FILTER (WHERE c.virou_pedido AND c.incremental IS TRUE), 0) AS valor_novo,
+                   COUNT(*) FILTER (WHERE c.incremental IS FALSE) AS itens_desconto
             FROM sugestao_vendedor.conversao_item c
             JOIN sugestao_vendedor.historico_consultas h ON h.id = c.consulta_id
             {filtro_c}
             """,
             params,
         )
-        itens_conv, consultas_conv, valor = cur.fetchone()
+        itens_conv, consultas_conv, valor, itens_novos, valor_novo, itens_desc = cur.fetchone()
 
     return {
         "consultas": int(consultas or 0),
@@ -257,6 +266,9 @@ def resumo_conversao(vendedor: str | None, is_gestor: bool) -> dict[str, Any]:
         "itens_convertidos": int(itens_conv or 0),
         "consultas_convertidas": int(consultas_conv or 0),
         "valor_gerado": float(valor or 0),
+        "itens_novos": int(itens_novos or 0),
+        "valor_novo": float(valor_novo or 0),
+        "itens_desconto": int(itens_desc or 0),
     }
 
 

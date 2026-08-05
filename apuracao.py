@@ -54,11 +54,30 @@ def _docs_do_cliente(filial: str, num_docto: int, cod_cli: int, desde: str) -> l
     return r.json().get("itens") or []
 
 
+def _incremental(item: dict) -> bool | None:
+    """A venda foi realmente nova, ou só desconto no que o cliente já ia levar?
+
+    Só dá pra afirmar se a sugestão registrou o perfil de recompra do item
+    (ciclo médio + dias parado). Item fora do ciclo = ele não viria sozinho,
+    a oferta trouxe. Item dentro do ciclo = ia comprar de qualquer jeito e a
+    Napel só abriu mão de margem. Sugestões da regra antiga não têm esse dado
+    e ficam como None (indeterminado)."""
+    ciclo = item.get("ciclo_dias")
+    parado = item.get("dias_parado")
+    if not ciclo or parado is None:
+        return None
+    return parado > ciclo * 1.5
+
+
 def _casar(itens_sugeridos: list[dict], docs: list[dict]) -> list[dict]:
     """Retorna 1 entrada por produto sugerido que foi vendido pelo preço da
     sugestão. Se o produto aparece em CTV e PEV, mantém o PEV (venda fechada)."""
     promo_por_cod = {
         str(i.get("cod", "")).strip(): float(i.get("promo") or 0)
+        for i in itens_sugeridos
+    }
+    incr_por_cod = {
+        str(i.get("cod", "")).strip(): _incremental(i)
         for i in itens_sugeridos
     }
     achados: dict[str, dict] = {}
@@ -76,6 +95,7 @@ def _casar(itens_sugeridos: list[dict], docs: list[dict]) -> list[dict]:
             "num_docto": d.get("num_docto"), "data_doc": None,
             "na_ctv_orig": d.get("na_ctv_orig"),
             "virou_pedido": d.get("docto") == "PEV",
+            "incremental": incr_por_cod.get(cod),
         }
         data_br = d.get("data") or ""
         if len(data_br) == 10:  # dd/mm/aaaa -> aaaa-mm-dd
