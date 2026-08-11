@@ -119,13 +119,18 @@ def require_auth(
 
 
 def _notificar_consulta(vendedor: str, cliente: str, filial: str, num_docto: int, qtd_itens: int) -> None:
-    """Avisa o Renato via WhatsApp (Gateway v3) a cada consulta gerada.
+    """Avisa Renato e Hudson via WhatsApp (Gateway v3) a cada consulta gerada.
     Best-effort — nunca deve derrubar a resposta ao vendedor (BackgroundTasks
     já roda fora do ciclo de resposta, mas o try/except cobre erro de rede)."""
     token = os.environ.get("EVOLUTION_API_TOKEN")
-    numero = os.environ.get("RENATO_WHATSAPP")
-    if not token or not numero:
+    if not token:
         return
+    # `name` é o nome do CONTATO destinatário no Chatwoot, não do remetente —
+    # tem que casar com quem recebe, senão o gateway renomeia o contato errado.
+    destinos = [
+        (os.environ.get("RENATO_WHATSAPP"), "Renato"),
+        (os.environ.get("HUDSON_WHATSAPP"), "Hudson"),
+    ]
     hora = datetime.now(_TZ_BR).strftime("%d/%m %H:%M")
     texto = (
         f"Sugestão de Itens — {vendedor}\n"
@@ -133,15 +138,18 @@ def _notificar_consulta(vendedor: str, cliente: str, filial: str, num_docto: int
         f"{qtd_itens} itens sugeridos"
     )
     url = f"http://195.35.19.31:18310/message/sendText/{_WHATSAPP_INSTANCE}"
-    try:
-        httpx.post(
-            url,
-            headers={"apikey": token},
-            json={"number": numero, "text": texto, "name": "Renato"},
-            timeout=8.0,
-        )
-    except httpx.HTTPError:
-        pass
+    for numero, nome in destinos:
+        if not numero:
+            continue
+        try:
+            httpx.post(
+                url,
+                headers={"apikey": token},
+                json={"number": numero, "text": texto, "name": nome},
+                timeout=8.0,
+            )
+        except httpx.HTTPError:
+            pass
 
 
 @app.get("/health")
