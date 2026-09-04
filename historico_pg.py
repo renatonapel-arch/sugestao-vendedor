@@ -84,9 +84,38 @@ def init() -> None:
                 ADD COLUMN IF NOT EXISTS incremental BOOLEAN;
             CREATE INDEX IF NOT EXISTS ix_conv_consulta
                 ON sugestao_vendedor.conversao_item (consulta_id);
+
+            -- Trava permanente por cotacao (chamado #0117): so a 1a sugestao
+            -- gerada pra essa (filial, num_docto) conta, pra sempre -- mesmo
+            -- que a cotacao seja editada depois. Checagem em app.py antes de
+            -- registrar() -- sem unique index no banco de propósito: existem
+            -- 25 cotacoes com duplicata no historico anterior a essa regra
+            -- (04/09/2026), e apagar/mesclar essas linhas destruiria auditoria
+            -- real que alimenta conversao_item. Risco de corrida (2 cliques
+            -- simultaneos pra mesma cotacao) e desprezivel nesse volume.
+            CREATE INDEX IF NOT EXISTS ix_hist_filial_docto
+                ON sugestao_vendedor.historico_consultas (filial, num_docto);
         """)
         conn.commit()
     _schema_ready = True
+
+
+def ja_gerada(filial: str, num_docto: int) -> dict[str, Any] | None:
+    """Trava permanente por cotação (chamado #0117): sugestão gerada uma vez
+    pra essa (filial, num_docto) vale pra sempre, mesmo que a cotação seja
+    editada depois. Global — não é por vendedor."""
+    init()
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, ts_utc, vendedor FROM sugestao_vendedor.historico_consultas "
+            "WHERE filial = %s AND num_docto = %s ORDER BY ts_utc ASC LIMIT 1",
+            (filial, num_docto),
+        )
+        row = cur.fetchone()
+    if not row:
+        return None
+    data, hora = _fmt_ts(row[1])
+    return {"id": row[0], "vendedor": row[2], "data": data, "hora": hora}
 
 
 def registrar(vendedor: str, filial: str, num_docto: int, cliente: str, snapshot: dict[str, Any]) -> int:

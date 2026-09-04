@@ -173,9 +173,26 @@ def sugerir(
     econ_min: float = Form(5.0),
     user: dict = Depends(require_auth),
 ):
+    filial_norm = filial.strip()
+
+    # Trava permanente por cotação (chamado #0117): já gerou uma vez pra essa
+    # (filial, num_docto), não gera de novo -- pra sempre, mesmo se a cotação
+    # for editada depois. Vale pra todos os vendedores, não só quem gerou.
+    existente = historico_db.ja_gerada(filial_norm, int(num_docto))
+    if existente:
+        return JSONResponse(
+            {
+                "erro": f"Sugestão já gerada pra essa cotação em {existente['data']} {existente['hora']} "
+                        f"por {existente['vendedor']}. Não gera de novo.",
+                "ja_gerada": True,
+                "consulta_id": existente["id"],
+            },
+            status_code=409,
+        )
+
     try:
         resultado = db.sugerir(
-            filial=filial.strip(),
+            filial=filial_norm,
             num_docto=int(num_docto),
             markup=markup,
             piso_valor_item=piso,

@@ -385,7 +385,17 @@ async function fazerConsulta(){
 
     if(!resp.ok){
       const err = await resp.json().catch(()=>({erro:'erro inesperado'}));
-      showErr(err.erro || 'erro inesperado');
+      if(err.ja_gerada && err.consulta_id){
+        els.errBox.innerHTML = `<div class="err-box"><svg class="i" style="font-size:18px"><use href="#i-alert"/></svg>
+          <span>${err.erro} <a href="#" id="lnkVerJaGerada" style="font-weight:800;text-decoration:underline">Ver a sugestão gerada</a></span></div>`;
+        els.errBox.classList.remove('hidden');
+        document.getElementById('lnkVerJaGerada').addEventListener('click', (ev)=>{
+          ev.preventDefault();
+          abrirDetalhe(err.consulta_id);
+        });
+      } else {
+        showErr(err.erro || 'erro inesperado');
+      }
       els.stepInput.classList.remove('hidden');
       return;
     }

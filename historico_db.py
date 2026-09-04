@@ -51,6 +51,22 @@ def init() -> None:
         """)
 
 
+def ja_gerada(filial: str, num_docto: int) -> dict[str, Any] | None:
+    """Trava permanente por cotação (chamado #0117): sugestão gerada uma vez
+    pra essa (filial, num_docto) vale pra sempre, mesmo que a cotação seja
+    editada depois. Global — não é por vendedor."""
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT id, ts_utc, vendedor FROM historico_consultas "
+            "WHERE filial = ? AND num_docto = ? ORDER BY ts_utc ASC LIMIT 1",
+            (filial, num_docto),
+        ).fetchone()
+    if not row:
+        return None
+    data, hora = _fmt_ts(row["ts_utc"])
+    return {"id": row["id"], "vendedor": row["vendedor"], "data": data, "hora": hora}
+
+
 def registrar(vendedor: str, filial: str, num_docto: int, cliente: str, snapshot: dict[str, Any]) -> int:
     ts_utc = datetime.now(timezone.utc).isoformat()
     with _connect() as conn:
