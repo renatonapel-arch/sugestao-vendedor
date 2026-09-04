@@ -145,7 +145,7 @@ def _notificar_consulta(vendedor: str, cliente: str, filial: str, num_docto: int
             httpx.post(
                 url,
                 headers={"apikey": token},
-                json={"number": numero, "text": texto, "name": nome},
+                json={"number": numero, "text": texto, "name": nome, "template_id": "#0332"},
                 timeout=8.0,
             )
         except httpx.HTTPError:
