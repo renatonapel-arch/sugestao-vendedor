@@ -3,39 +3,43 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#042C48">
 <title>NAPEL — Sugestão de Itens</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root{
-  --navy-900:#082E49; --navy:#0A3C5F; --sky:#74A9D7; --sky-700:#2f7cbf; --sky-bg:#EAF3FB;
-  --ink:#0c2433; --ink-soft:#33495b; --muted:#62798c; --faint:#93a7b6;
-  --bg:#F4F8FB; --card:#fff; --border:#E8EFF4; --border-strong:#D6E4EE;
-  --ok:#10B981; --ok-bg:#ECFDF5; --ok-fg:#047857;
-  --err:#DC2626; --err-bg:#FEF2F2; --err-fg:#991B1B;
+  color-scheme:dark;
+  --navy-900:#EBF7FA; --navy:#74A9D7; --sky:#74A9D7; --sky-700:#9FC3E3; --sky-bg:#113C58;
+  --ink:#EBF7FA; --ink-soft:#B5D4E8; --muted:#A9C6DD; --faint:#8DB2CF;
+  --bg:#042C48; --card:#0A3450; --border:#113C58; --border-strong:#27557A;
+  --ok:#34D399; --ok-bg:rgba(52,211,153,.16); --ok-fg:#6EE7B7;
+  --err:#F87171; --err-bg:rgba(248,113,113,.18); --err-fg:#FCA5A5;
   --r:14px;
-  --shadow:0 1px 2px rgba(8,46,73,.04),0 10px 26px -14px rgba(8,46,73,.22);
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 26px -14px rgba(0,0,0,.55);
   --ease:cubic-bezier(.16,1,.3,1);
   --font:'Inter',system-ui,sans-serif; --font-d:'Archivo',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.5}
 .fd{font-family:var(--font-d);letter-spacing:-.02em}
 .tnum{font-variant-numeric:tabular-nums}
-::selection{background:var(--sky);color:var(--navy-900)}
+::selection{background:var(--sky);color:#042C48}
 
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;box-shadow:var(--shadow)}
 
 .btn{border:0;border-radius:11px;padding:12px 20px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;transition:.2s var(--ease);display:inline-flex;align-items:center;gap:8px}
-.btn-primary{background:var(--navy);color:#fff;box-shadow:0 8px 18px -8px rgba(10,60,95,.55)}.btn-primary:hover{background:var(--navy-900);transform:translateY(-1px)}
+.btn-primary{background:var(--navy);color:#042C48;box-shadow:0 8px 18px -8px rgba(0,0,0,.5)}.btn-primary:hover{background:#B5D4E8;transform:translateY(-1px)}
 .btn-primary:disabled{background:var(--faint);box-shadow:none;cursor:not-allowed;transform:none}
-.btn-ghost{background:#fff;border:1px solid var(--border-strong);color:var(--navy)}.btn-ghost:hover{border-color:var(--sky);background:var(--sky-bg)}
+.btn-ghost{background:var(--bg);border:1px solid var(--border-strong);color:var(--navy)}.btn-ghost:hover{border-color:var(--sky);background:var(--sky-bg)}
 
-.inp{width:100%;font-family:inherit;font-size:14px;color:var(--ink);background:#fff;border:1.5px solid var(--border);border-radius:11px;padding:12px 14px;transition:.18s var(--ease)}
+.inp{width:100%;font-family:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border);border-radius:11px;padding:12px 14px;transition:.18s var(--ease)}
 .inp:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 4px var(--sky-bg)}
 .label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
 
-.spin{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:sp .7s linear infinite}
+.spin{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(4,44,72,.3);border-top-color:#042C48;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 
 svg.i{width:1em;height:1em;display:inline-block;vertical-align:-.13em;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -43,11 +47,11 @@ svg.i{width:1em;height:1em;display:inline-block;vertical-align:-.13em;stroke:cur
 .reveal{opacity:0;transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
 .reveal.in{opacity:1;transform:none}
 
-.role-picker{display:flex;align-items:center;gap:2px;padding:4px 4px 4px 0;background:#fff;border:1px solid var(--border-strong);border-radius:11px;box-shadow:var(--shadow);width:fit-content;margin-left:auto;margin-bottom:18px}
+.role-picker{display:flex;align-items:center;gap:2px;padding:4px 4px 4px 0;background:var(--card);border:1px solid var(--border-strong);border-radius:11px;box-shadow:var(--shadow);width:fit-content;margin-left:auto;margin-bottom:18px}
 .role-picker .role-lbl{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;padding:0 12px 0 14px}
 .role-btn{border:0;background:transparent;padding:8px 16px;border-radius:8px;font-family:var(--font-d);font-weight:700;font-size:12.5px;color:var(--muted);cursor:pointer;transition:.18s var(--ease)}
 .role-btn:hover{color:var(--navy)}
-.role-btn.active{background:var(--navy);color:#fff}
+.role-btn.active{background:var(--navy);color:#042C48}
 
 .tabs-wrap{max-width:960px;margin:0 auto 22px}
 .tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--border)}
@@ -55,8 +59,8 @@ svg.i{width:1em;height:1em;display:inline-block;vertical-align:-.13em;stroke:cur
 .tab:hover{color:var(--navy)}
 .tab.active{color:var(--navy);border-bottom-color:var(--navy)}
 
-.doc{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
-.doc-head{background:linear-gradient(120deg,var(--navy-900),var(--navy));color:#fff;padding:18px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.doc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.doc-head{background:linear-gradient(120deg,#113C58,#0E4468);color:#fff;padding:18px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
 .doc-head .lbl{font-size:10px;font-weight:800;letter-spacing:.14em;color:#9fcdf0;text-transform:uppercase}
 .doc-head .val{font-family:var(--font-d);font-weight:800;font-size:15px;margin-top:3px;letter-spacing:-.01em}
 
@@ -79,7 +83,7 @@ table.tbl tr:last-child td{border-bottom:0}
 /* faixa de resumo de conversao */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--border);
       border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow)}
-.kpi{background:#fff;padding:16px 18px}
+.kpi{background:var(--card);padding:16px 18px}
 .kpi .k-lbl{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
 .kpi .k-val{font-family:var(--font-d);font-weight:900;font-size:26px;color:var(--navy-900);letter-spacing:-.03em;margin-top:4px;line-height:1}
 .kpi .k-sub{font-size:11px;color:var(--faint);font-weight:600;margin-top:3px}
@@ -89,7 +93,7 @@ table.tbl tr:last-child td{border-bottom:0}
 .c-conv{font-family:var(--font-d);font-weight:800;font-size:13px;color:var(--faint)}
 .c-conv.hit{display:inline-flex;align-items:center;gap:5px;background:var(--ok-bg);color:var(--ok-fg);
             padding:4px 10px;border-radius:999px;font-size:12px}
-.row-conv{background:linear-gradient(90deg,rgba(16,185,129,.07),transparent 55%)}
+.row-conv{background:linear-gradient(90deg,rgba(52,211,153,.14),transparent 55%)}
 .badge-conv{display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-size:10px;font-weight:800;
             padding:3px 8px;border-radius:999px;background:var(--ok-bg);color:var(--ok-fg);
             text-transform:uppercase;letter-spacing:.06em;vertical-align:middle}
@@ -99,10 +103,10 @@ table.tbl tr:last-child td{border-bottom:0}
 .seg button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-family:var(--font-d);
             font-weight:700;font-size:12px;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}
 .seg button:hover{color:var(--navy)}
-.seg button.on{background:var(--navy);color:#fff}
+.seg button.on{background:var(--navy);color:#042C48}
 
 /* ranking por vendedor */
-.rank{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);
+.rank{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);
       padding:18px 20px;margin-bottom:18px}
 .rank h3{font-family:var(--font-d);font-weight:800;font-size:14px;color:var(--navy-900);margin-bottom:12px}
 .rank table{width:100%;border-collapse:collapse;font-size:13px}
@@ -130,11 +134,21 @@ table.tbl tr:last-child td{border-bottom:0}
 .h-chev{color:var(--faint);transition:.18s var(--ease);font-size:15px}
 .hist-tbl tbody tr:hover .h-chev{color:var(--sky-700);transform:translateX(2px)}
 
-.err-box{background:var(--err-bg);border:1px solid #FCA5A5;border-radius:11px;padding:14px 18px;color:var(--err-fg);font-weight:600;font-size:13.5px;display:flex;align-items:flex-start;gap:10px}
+.err-box{background:var(--err-bg);border:1px solid rgba(248,113,113,.45);border-radius:11px;padding:14px 18px;color:var(--err-fg);font-weight:600;font-size:13.5px;display:flex;align-items:flex-start;gap:10px}
 .err-box svg{color:var(--err);margin-top:2px;flex-shrink:0}
 .empty{padding:40px 20px;text-align:center;color:var(--muted);font-weight:600}
 
 @media print{
+  :root{color-scheme:light;
+    --navy-900:#082E49; --navy:#0A3C5F; --sky:#74A9D7; --sky-700:#2f7cbf; --sky-bg:#EAF3FB;
+    --ink:#0c2433; --ink-soft:#33495b; --muted:#62798c; --faint:#93a7b6;
+    --bg:#F4F8FB; --card:#fff; --border:#E8EFF4; --border-strong:#D6E4EE;
+    --ok:#10B981; --ok-bg:#ECFDF5; --ok-fg:#047857;
+    --err:#DC2626; --err-bg:#FEF2F2; --err-fg:#991B1B;
+    --shadow:0 1px 2px rgba(8,46,73,.04),0 10px 26px -14px rgba(8,46,73,.22);}
+  html{background:#fff}
+  .doc-head{background:linear-gradient(120deg,#082E49,#0A3C5F)}
+  .row-conv{background:linear-gradient(90deg,rgba(16,185,129,.07),transparent 55%)}
   body{background:#fff}
   .no-print{display:none !important}
   .doc,.card{box-shadow:none;border-color:#d0d8de}
@@ -216,7 +230,7 @@ table.tbl tr:last-child td{border-bottom:0}
         <div><div class="lbl">Data</div><div class="val tnum" id="hdrData">—</div></div>
         <div><div class="lbl">Vendedor</div><div class="val" id="hdrVend">—</div></div>
       </div>
-      <div style="height:22px;background:#fff"></div>
+      <div style="height:22px;background:var(--card)"></div>
       <table class="tbl">
         <thead>
           <tr>
